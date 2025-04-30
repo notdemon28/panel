@@ -2,15 +2,15 @@ version: "3.8"
 
 services:
 
-MariaDB Database for Pterodactyl
+#MariaDB Database for Pterodactyl
 
 database: image: mariadb:10.5 restart: always command: --default-authentication-plugin=mysql_native_password environment: MYSQL_ROOT_PASSWORD: "CHANGE_ME_TOO" MYSQL_DATABASE: panel MYSQL_USER: pterodactyl MYSQL_PASSWORD: "CHANGE_ME" volumes: - "/srv/pterodactyl/database:/var/lib/mysql"
 
-Redis Cache for Pterodactyl
+#Redis Cache for Pterodactyl
 
 cache: image: redis:alpine restart: always
 
-Pterodactyl Panel (PHP-FPM + Panel combined)
+#Pterodactyl Panel (PHP-FPM + Panel combined)
 
 panel: image: ghcr.io/pterodactyl/panel:latest restart: always depends_on: - database - cache ports: - "80:80" - "443:443" environment: # Application Settings APP_ENV: "production" APP_URL: "http://your-domain.com" APP_TIMEZONE: "UTC" APP_SERVICE_AUTHOR: "noreply@your-domain.com"
 
