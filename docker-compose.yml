@@ -1,46 +1,72 @@
 version: "3.8"
 
 services:
+  # MariaDB Database for Pterodactyl
+  database:
+    image: mariadb:10.5
+    restart: always
+    command: --default-authentication-plugin=mysql_native_password
+    environment:
+      MYSQL_ROOT_PASSWORD: "CHANGE_ME_TOO"
+      MYSQL_DATABASE: panel
+      MYSQL_USER: pterodactyl
+      MYSQL_PASSWORD: "CHANGE_ME"
+    volumes:
+      - "/srv/pterodactyl/database:/var/lib/mysql"
 
-#MariaDB Database for Pterodactyl
+  # Redis Cache for Pterodactyl
+  cache:
+    image: redis:alpine
+    restart: always
 
-database: image: mariadb:10.5 restart: always command: --default-authentication-plugin=mysql_native_password environment: MYSQL_ROOT_PASSWORD: "CHANGE_ME_TOO" MYSQL_DATABASE: panel MYSQL_USER: pterodactyl MYSQL_PASSWORD: "CHANGE_ME" volumes: - "/srv/pterodactyl/database:/var/lib/mysql"
+  # Pterodactyl Panel (PHP-FPM + Panel combined)
+  panel:
+    image: ghcr.io/pterodactyl/panel:latest
+    restart: always
+    depends_on:
+      - database
+      - cache
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      # Application Settings
+      APP_ENV: "production"
+      APP_URL: "http://your-domain.com"
+      APP_TIMEZONE: "UTC"
+      APP_SERVICE_AUTHOR: "noreply@your-domain.com"
 
-#Redis Cache for Pterodactyl
+      # Database Credentials
+      DB_HOST: database
+      DB_PORT: 3306
+      DB_DATABASE: panel
+      DB_USERNAME: pterodactyl
+      DB_PASSWORD: "CHANGE_ME"
 
-cache: image: redis:alpine restart: always
+      # Redis Settings
+      CACHE_DRIVER: redis
+      SESSION_DRIVER: redis
+      QUEUE_DRIVER: redis
+      REDIS_HOST: cache
 
-#Pterodactyl Panel (PHP-FPM + Panel combined)
+      # Mail Settings (optional)
+      MAIL_DRIVER: smtp
+      MAIL_HOST: mail
+      MAIL_PORT: 1025
+      MAIL_FROM: "noreply@your-domain.com"
+      MAIL_ENCRYPTION: "true"
 
-panel: image: ghcr.io/pterodactyl/panel:latest restart: always depends_on: - database - cache ports: - "80:80" - "443:443" environment: # Application Settings APP_ENV: "production" APP_URL: "http://your-domain.com" APP_TIMEZONE: "UTC" APP_SERVICE_AUTHOR: "noreply@your-domain.com"
+      # Uncomment for Let's Encrypt (SSL)
+      # LE_EMAIL: "you@example.com"
 
-# Database Credentials
-  DB_HOST: database
-  DB_PORT: 3306
-  DB_DATABASE: panel
-  DB_USERNAME: pterodactyl
-  DB_PASSWORD: "CHANGE_ME"
+    volumes:
+      - "/srv/pterodactyl/var:/app/var"
+      - "/srv/pterodactyl/nginx:/etc/nginx/http.d"
+      - "/srv/pterodactyl/certs:/etc/letsencrypt"
+      - "/srv/pterodactyl/logs:/app/storage/logs"
 
-  # Redis Settings
-  CACHE_DRIVER: redis
-  SESSION_DRIVER: redis
-  QUEUE_DRIVER: redis
-  REDIS_HOST: cache
-
-  # Mail Settings (optional)
-  MAIL_DRIVER: smtp
-  MAIL_HOST: mail
-  MAIL_PORT: 1025
-  MAIL_FROM: "noreply@your-domain.com"
-  MAIL_ENCRYPTION: "true"
-
-  # Uncomment for Let's Encrypt (SSL)
-  # LE_EMAIL: "you@example.com"
-
-volumes:
-  - "/srv/pterodactyl/var:/app/var"
-  - "/srv/pterodactyl/nginx:/etc/nginx/http.d"
-  - "/srv/pterodactyl/certs:/etc/letsencrypt"
-  - "/srv/pterodactyl/logs:/app/storage/logs"
-
-networks: default: ipam: config: - subnet: 172.20.0.0/16
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
