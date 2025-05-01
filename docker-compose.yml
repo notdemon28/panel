@@ -3,7 +3,7 @@ services:
     image: 'ghcr.io/pyrohost/pyrodactyl:main'
     restart: always
     ports:
-      - '3000:443'
+      - '3000:80'
     volumes:
       - '/srv/pterodactyl/var/:/app/var/'
       - '/srv/pterodactyl/nginx/:/etc/nginx/http.d/'
